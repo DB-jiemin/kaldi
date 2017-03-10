@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+        <a href="tutorial.html">Up: Kaldi tutorial </a><br>
+        <a href="tutorial_git.html">Previous: Version control with Git </a><br>
+        <a href="tutorial_running.html">Next: Running the example scripts </a><br>
+
+        在进入示例脚本之前,让我们花几分钟看一下kaldi文件分布.进入到Kaldi-1路径下,这里有一些文件和几个子路径.最重要的子路径是 tools/,src/和egs/,egs/我们将在下一本分看到.这里我们给出tools/和src/的概述.<br>
+        <h1>tools/路径</h1>
+        tools/ 路径是安装kaldi的依赖环境.进入tools.你会看到一系列的文件和子路径,最重要的事情是通过make命令进行安装.快速的浏览一下INSTALL文件.这个文件说明了如何安装这些工具.<br>
+        OpenFST是最重要的子路径之一.使用cd命令进入到openfst/.这是一个软链接,它链接到一个带有版本号的真实路径.看一下openfst路径.如果安装成功,这里会有一个二进制格式的bin/目录和一个lib/的库(我们需要这些).在include/fst/中存放着最重要的代码.如果你想深入的理解kaldi,你必须理解OpenFST.OpenFST最好的开始是<a href="http://www.openfst.org/"> http://www.openfst.org/.</a><br>
+        现在,我们仅仅浏览include/fst/fst.h文件.这个文件包含了一些FST抽象类型声明.你可以看到大量模板调用.如果你不知道模板是什么东西,你可能理解这些代码有些困难.<br>
+        改变路径到bin/,或者添加它到你的path.<a href="http://www.openfst.org/twiki/bin/view/FST/FstQuickTour#CreatingFsts">这里</a>将指导你执行一些简单的命令.<br>
+        粘贴下列命令到你的shell中:<br>
+        <p>
+        # arc format: src dest ilabel olabel [weight]<br>
+        # final state format: state [weight]<br>
+        # lines may occur in any order except initial state must be first line<br>
+        # unspecified weights default to 0.0 (for the library-default Weight type)<br>
+        cat >text.fst &lt;&lt;EOF<br>
+        0 1 a x .5<br>
+        0 1 b y 1.5<br>
+        1 2 c z 2.5<br>
+        2 3.5<br>
+        EOF<br>
+        </p>
+        下列命令是创建一个符号表,粘贴下列命令到你的shell:<br>
+        <p>
+        cat &gt;isyms.txt &lt;&lt;EOF<br>
+        &lt;eps&gt; 0<br>
+        a 1<br>
+        b 2<br>
+        c 3<br>
+        EOF<br>
+            <br>
+        cat &gt;osyms.txt &lt;&lt;EOF<br>
+        &lt;eps&gt; 0<br>
+        x 1<br>
+        y 2<br>
+        z 3<br>
+        EOF<br>
+        </p>
+        <font color="red">
+        注意:为了接下来的工作!如果在你的path中没有当前路径,你需要键入如下命令:
+        </font><br>
+        <p>export PATH=.:$PATH</p>
+        接下来创建一个二进制格式的FST:<br>
+        <p>fstcompile --isymbols=isyms.txt --osymbols=osyms.txt text.fst binary.fst</p>
+        让我们执行样例命令:<br>
+        <p>fstinvert binary.fst | fstcompose - binary.fst > binary2.fst</p>
+        binary2.fst是一个WFST文件和binary.fst文件相似,但是它是两倍的权重,你可以打印出它们看一下:<br>
+        <p>
+        fstprint --isymbols=isyms.txt --osymbols=osyms.txt binary.fst<br>
+        fstprint --isymbols=isyms.txt --osymbols=osyms.txt binary2.fst<br>
+        </p>
+        在<a href="www.openfst.org">www.openfst.org</a>中是一个很长的教程,这个例子被修改.在你完成这些命令后,你需要清除这些文件,键入如下命令:<br>
+        <p>rm *.fst *.txt</p>
+        
+        <h1>scr/路径(10分钟)</h1>
+        回退到顶级路径kaldi-1并进入src/路径.list the directory.你会看到几个文件和大量的子路径.看一下Makefile.在文件的上面有一个SUBDIRS变量.这个是包含了有代码子路径的列表.<font color="red">主要:它们是一些以bin结尾的路径.</font>这些是包含可执行的文件(这些可执行的代码在相同的路径下). 其他路径包含的是内部代码(c++代码).你可以看到，Makefile中的目标之一是"test".键入"make test".这个命令会进入各个子文件夹下,然后运行测试(test)程序.所有的test应该都是成功的.如果你很幸运,你可以键入"make valgrind".该命令将运行相同的程序在内存中,并且时间会更长,但是会发现更多的错误.如果这些不工作的话,那就忘了它吧;现在它不是很重要.如果它运行了太长的时间,可以使用ctrl+c停掉它.<br>
+        改变路径到base/下.看看Makefile文件,<font color="red">注意下面一行:</font><br>
+        <p>include ../kaldi.mk</p>
+        这行包含了../kaldi.mk文件,当子路径下Makeflie被调用时(类似于C语言中的 #include).看一下../kaldi.mk文件.它包含了一些命令相关的工具集(内存调试器),
+        <a href="tutorial.html">Up: Kaldi tutorial </a><br>
+        <a href="tutorial_git.html">Previous: Version control with Git </a><br>
+        <a href="tutorial_running.html">Next: Running the example scripts </a><br>
+    </body>
+</html>

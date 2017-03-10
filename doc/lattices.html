@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+       <h1>Lattices in Kaldi</h1>
+       <h1>引言</h1>
+        lattice是用来代替次序列的方法,它充分的表示一个utterance.为了理解lattice,应该彻底了解一下WFST中的解码图.(see<a href="graph.html">Decoding graph construction in Kaldi</a>).这个部分我们总结一些kaldi lattice相关的问题,在其余的部分我们将清晰的解释它.读者可以去阅读<a href="https://sites.google.com/site/dpovey/2012_icassp_lattices.pdf?attredirects=0">Generating exact lattices in the WFST framework,D.Povey,M.Hannemannet.al,ICASSP 2012(submitted)</a>,前面的公开算法,给我们的lattice提供了更多的上下文相关的内容.本页更关注编程方面的内容.<br>
+        kaldi里面有两种表示lattice的方法.第一种方法是Lattice类型.这是一个FST类型,它的权重类型,包含了两个floating point weights(the graph cost and the acoustic cost),它输入的符号是transition-ids(大致上是HMM状态的上下文依赖),输出是words(通常它们的输出表示你解码图的输出).<br>
+        第二种lattice类型是CompactLattice.这个类型本质上和Lattice包含相同的信息,但是格式不同:CompactLattice是一个接收者(意味着它的输入输出总是相同的),输入输出表示words,transition-ids序列包含在权重部分(注意:OpenFST的权重概念是非常笼统的;任何满足半环理论的都可以称为权重).权重在CompactLattice中包含一对浮点数和一个整数序列(表示transition-ids).我们稍后描述半环.<br>
+        Lattice和CompactLattice类型都是表示相同的信息,我们在I/O机制上为它们做了相同的内容,读Lattice也可以读CompactLattice,反过来也可以.例如,如果你使用SequentialLatticeReader去读一个通过utterance-id索引的lattice,它不管具体的archive文件是Lattice还是CompactLattice.然而,我们通常写一个lattices是CompactLattice类型.因为需要对lattice进行转换,所以大部分程序读取Lattice,函数ConverLattice()可以进行转换.<br>
+        CompactLattice和Lattice类型包含两个浮点数,可以直译为graph cost和acoustic cost.graph cost是LM cost总和,(权重)转移概率,和任何的pronunciation cost.将它们混合在一起,为了让LM重新打分,我们通常先减去老的LM cost然后加上新的LM cost,避免接触到其他部分的cost.我们称这两个浮点数为(a,b),在Lattice半环中,类似字典半环(a+b,a-b)(see OpenFst文档的解释).当我们"加"(在半环中)这对数字时,我们将获得最小的(graph + acoustic) cost;如果它们相同,我们使用(graph - acoustic)方式去断开它们的关系.这意味着最佳的路径.事实上,只有适当的调整声学模型的权重才有意义.我们约定一个外部的lattice(e.g. on disk)未调整acoustic costs,并且应用缩放任意算法之前,应比较权重(未缩放之前我们lattice的输出).<br>
+        Lattice和CompactLattice类型使用数据结构的形式去表示传统的lattice,并且仅仅表示N-best的列表.lattice生成算法,我们使用相当精准的特性.让lattice-delta为一个数字(典型的如 10或者其他).我们的lattice生成算法确保(模除beam剪枝)保证每个词序列是最佳的对齐成本,在lattice中包含lattice-delta的最佳路径表示,和最可能的对齐与权重.同样,每个词序列在lattice中必须被唯一表示.我们首先创建state-level lattice并且适当的修剪它,然后使用半环确定化算法确定它(你可以认为这是一个特殊的确定话算法,处理不起作用的FSTs,并且总是挑选最有可能的替代路径).我们下面解释它是如何工作的.<br>
+        我们确保写到磁盘的lattice产生的词序列是唯一的.这是一个让工作有价值的必要算法(就像LM重评分一样).确定化(在CompactLattice格式中词标签)是一个充分的条件.<br>
+        在kaldi代码中,我们没有任何的附加符号表.为了保存包含最自然真实词语的lattice,我们使用脚本去做这个转换.(例如:egs/rm/s1/steps/decode_tri1_latgen.sh)<br>
+        <h1>Lattice类型</h1>
+        Lattice类型仅仅是一个特定半环FST模板.在kaldi-lattice.h,我们定义如下:<br>
+        typedef fst::VectorFst&lt;LatticeArc&gt; Lattice;<br>
+        其中,LatticeArc是定义在LatticeWeight上的常规弧(arc)类型模板:<br>
+        typedef fst::ArcTpl<LatticeWeight> LatticeArc;
+        LatticeWeight是重新定义的一个LatticeWeightTpl模板实例,它使用BaseFloat类型表示floating point 类型.<br>
+        typedef fst::LatticeWeightTpl<BaseFloat> LatticeWeight;<br>
+        LatticeWeightTpl相关的定义在fst命名空间下--fstext/lattice-weight.h.它类似于字典图半环,例如:它类似OpenFst类型.<br>
+        LexicographicWeight&lt;TropicalWeight, TropicalWeight&gt;<br>
+        
+    </body>
+</html>
+<!--
+
+    [[[[[[[[[[[[[[[      ]]]]]]]]]]]]]]]
+    [::::::::::::::      ::::::::::::::]
+    [::::::::::::::      ::::::::::::::]
+    [::::::[[[[[[[:      :]]]]]]]::::::]
+    [:::::[                      ]:::::]
+    [:::::[                      ]:::::]
+    [:::::[                      ]:::::]
+    [:::::[                      ]:::::]
+    [:::::[     CODE THE WEB     ]:::::]
+    [:::::[  http://brackets.io  ]:::::]
+    [:::::[                      ]:::::]
+    [:::::[                      ]:::::]
+    [:::::[                      ]:::::]
+    [:::::[                      ]:::::]
+    [::::::[[[[[[[:      :]]]]]]]::::::]
+    [::::::::::::::      ::::::::::::::]
+    [::::::::::::::      ::::::::::::::]
+    [[[[[[[[[[[[[[[      ]]]]]]]]]]]]]]]
+
+-->

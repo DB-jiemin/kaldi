@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+        <h2>HMM拓扑转换模型</h2>
+        <hr>
+        <h1>引言</h1>
+        这里我们讨论kaldi如何表示HMM拓扑以及如何训练我们的HMM转换模型.我们简要的说明如何它是如何与决策树进行交互的.关于决策树的相关信息请看<a href="tree_externals.html">How decision trees are used in kaldi</a>和<a href="tree_internals.html">Decision tree internals</a>.相关的类和函数请看<a href="group__hmm__group.html">Classes and functions related to HMM topology and transition modeling</a><br>
+        <h1>HMM拓扑</h1>
+        HMMTopology是用来创建HMM音素拓扑的工具.常规上,这个类通过命令行的方式创建一个文本格式的HmmTopology对象文件.通常上这个文本文件包含下列的HmmTopology对象(3状态 Bakis模型):<br>
+        <div>
+         &lt;Topology&gt; <br>
+         &lt;TopologyEntry&gt; <br>
+         &lt;ForPhones&gt; 1 2 3 4 5 6 7 8 &lt;/ForPhones&gt;<br>
+         &lt;State&gt; 0 &lt;PdfClass&gt; 0<br>
+         &lt;Transition&gt; 0 0.5<br>
+         &lt;Transition&gt; 1 0.5<br>
+         &lt;State&gt; <br>
+         &lt;State&gt; 1 &lt;PdfClass&gt; 1<br>
+         &lt;Transition&gt; 1 0.5<br>
+         &lt;Transition&gt; 2 0.5<br>
+         &lt;State&gt; <br>
+         &lt;State&gt; 2 &lt;PdfClass&gt; 2<br>
+         &lt;Transition&gt; 2 0.5<br>
+         &lt;Transition&gt; 3 0.5<br>
+         &lt;State&gt; <br>
+         &lt;State&gt; 3<br>
+         &lt;State&gt; <br>
+         &lt;TopologyEntry&gt; <br>
+         &lt;Topology&gt; <br>
+        </div>
+    </body>
+</html>
+

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+        
+        <h1>开始学习和一些先决条件</h1>
+        教程的下一个阶段是运行Resource Management(以下简称RM)实例脚本。回到顶级路径(我们这里是kaldi-1)并且进入到egs/下。在这里会看到README.txt文件并且能清晰的看到RM部分。涉及到LDC相关语料库。这些可能帮助你获得LDC数据。如果你有一些原因不能获得这些数据，只要继续阅读这个教程并且做一些步骤，在这些步骤中可以没有数据，你仍然可以获得一些有价值的信息。最好在你的系统上有一些路径，比如说：/export/corpora5/LDC/LDC93S3A/rm_comp,并且包含三个子路径，分别为：rm1_audio1,rm1_audio2和rm2_audio。这相当于在LDC数据中分布的三个原始磁盘。假设你的shell类型为bash。如果你有不同的shell，这些命令将不能工作或者需要修改。
+        <br>
+        现在改变路径到rm/s5。(这是一个基本的实验序列，对应的5号工具箱。)
+        <br>
+        在s5/中，你会看到一些文件及路径还有一个results的文件。一个主要的文件run.sh。
+        注意：run.sh不能直接运行在你的shell中。
+        <br>
+        <h1>数据准备</h1>
+        我们将首先需要配置是否需要运行在本地或是运行在Oracle gridengine。cmd.sh将说明这写是如何做的。
+        <br>
+        如果你没有安装GridEngine或者你运行一些小数据集，需要在shell中执行下列命令：
+        <br><br>
+        train_cmd="run.pl"<br>
+        decode_cmd="run.pl"<br>
+        <br>
+        如果你安装了GridEngine，你需要使用queue.pl文件并且指定其参数。因此你需要执行下列命令(参数 -q 仅仅是为了举例，你需要替换成你的GridEngine)：<br><br>
+        train_cmd="queue.pl -q all.q@a*.clsp.jhu.edu"<br>
+        decode_cmd="queue.pl -q all.q@[ah]*.clsp.jhu.edu"<br><br>
+        接下来需要为RM创建test和training集合，只要运行下列命令即可：(假设你的数据在/export/corpora5/LDC/LDC93S3A/rm_comp)<br><br>
+        local/rm_data_prep.sh /export/corpora5/LDC/LDC93S3A/rm_comp<br><br>
+        如果这个命令执行成功，在控制台中会显示：RM_data_prep succeeded.否则，你需要找出来出错的地方。<br>
+        现在的当前目录下应该有一个data的目录被创建。进入data目录中，会看到一些包含的文件，主要是一些文件夹：<br>
+        <ul>
+            <li>local:包含当前数据的字典</li>
+            <li>train:这部分数据是从预料库中选择出来用作训练用的</li>
+            <li>test_*:用来测试用数据</li>
+        </ul>
+        我们来看一下这些被创建的数据文件。这些文件可以让你了解kaldi的数据输入。(详细细节：<a href="data_prep.html">数据准备</a>)
+        <br>
+        local路径：假设现在你位于data路径下，执行下列命令：<br><br>
+        cd local/dict<br>
+        head lexcion.txt<br>
+        head nonsilence_phones.txt<br>
+        head silence_phones.txt<br><br>
+        这些输出将告诉你准备完毕的数据格式。不是所有文件都是‘native’形式，例如：在使用kaldi之前，它们可以用Kaldi的C++程序和OpenFST工具读取。
+        <ul>
+            <li>lexicon.txt:字典</li>
+            <li>*silence*.txt:这些文件包含一些音素信息，包括静音音素和非静音因素</li>
+        </ul>
+        现在，我们返回到data路径并且进入到/train下，在这个路径下输入以下命令，观察其输出结果：<br><br>
+        head text<br>
+        head spk2gender.map<br>
+        head spk2utt<br>
+        head utt2spk<br>
+        head wav.scp<br><br>
+        <ul>
+            <li>text - 该文件为映射文件,包含utterances和utterancd ids,这个文件将会被转换成integer整数格式,转换后仍然是一个text文件,但是词将会被替换成整数表示</li>
+            <li>spk2gender.map - 该文件也是一个映射文件,包含说话人和其性别.这个文件也被应用到训练.</li>
+            <li>spk2utt - 这个文件包含的内容是与说话人相关的内容,包含 说话人的标识符号和说话人的内容标识</li>
+            <li>utt2spk - 这个文件是utterance ids和相关说话人标识的1对1映射.</li>
+            <li>wav.scp - 这个文件是kaldi程序在做特征提取时真实读取路径,(在看一次文件),它被解析为键-值对,每一行的第一个字符串为key,value是一个"extended filename"(一个文件路径).(在读的过程中我们为rxfilename给出一个字符串的类型(,写,我们使用wxfilename)).详细内容请看<a href="io_sec_xfilename.html">Extended filenames:rxfilename and wxfilenames</a>.注意:尽管我们使用扩展名为.scp,但是这个文件不是一个脚本文件.(它不是命令行参数的扩展)</li>
+        </ul>
+        train文件夹和test_*文件夹是相同的.但是,train数据比test数据容量要大很多.你可以进入到data路径下,输入下列命令将给出train和test的字数统计.<br>
+        wc train/text test_feb89/text<br>
+        下一步是创建一个元语言文件.在大多数实例中,它们将是整数格式的文本文件.现在确保回退到s5路径下并且执行下列命令:<br><br>
+        
+        utils/prepare_lang.sh data/local/dict '!SIL' data/local/lang data/lang<br><br>
+        
+        将在local路径下创建一个新的文件夹--lang,它将包含一个FST格式的文件来描述语言问题.(看一下这个脚本).它把data中创建的文件转换成更规范的格式.该脚本的输出在data/lang/路径下.下面我们涉及到的文件在该路径下.<br>
+        这个脚本创建的前两个文件是words.txt和phones.txt(在data/lang/下).这些是OpenFST格式的符号表,标识一个字符串-整数的映射文件.(看下这些文件;)这些文件非常重要并且也经常被使用,因此你需要理解它们.它们有相同的符号格式,在以前的<a href="tutorial_looking.html">Oberview of the distribution</a>有详细介绍.<br>
+        下面看一下suffix.csl文件(在data/lang/phones).这个文件包含non-silence,silence和phones以冒号分割的整数id列表.它们有些时候作为命令行选项出现(例如指定silence音素列表),或者其他的用途.<br>
+        下面看下phones.txt(在data/lang/).这个文件是一个音素符号列表,用在标准FST中,也用来处理"消歧符".这些符号被表示成#1,#2等等(,具体可以看论文"<a href="http://www.cs.nyu.edu/~mohri/pub/hbka.pdf">Speech Recognition with Weighted Finite State Transducers</a>").在语言模型(language model)我们添加#0替换epsilon(更多详细内容请看<a href="graph.html">Disambiguation symbols</a>).这里有多少消歧符呢?在一些方法中,消歧符和单词数量相同,它们共享同一个发音.(在我们的方法中有很多,你可以在<a>这里</a>看到一些解释)<br>
+        L.fst文件是编译的FST文件格式.可以看到更多关于这个文件的信息,在s5路径下输入下列命令:<br><br>
+        fstprint --isymbols=data/lang/phones.txt --osymbols=data/lang/words.txt data/lang/L.fst | head<br><br>
+        如果bash不能找到命令,你需要将你的OpenFST的安装路径加入到PATH环境变量中.运行下面的脚本:<br>
+        . ./path.sh<br><br>
+        下面的步骤是用这个文件去创建语言的语法FST文件.返回到s5路径下并且执行下列命令:<br>
+        local/rm_prepare_grammar.sh<br><br>
+        如果执行成功,它将会返回如下信息"Succeeded preparing grammar for RM.",一个新的文件--G.fst将在/data/lang被创建.<br>
+        <h1>特征提取</h1>
+        下一步将是提取训练集的特征,在run.sh中搜索"mfcc"并且运行着三行相关的脚本.你要确保存放mfcc特征的路径下有足够的空间.建议你将特征放在/my/disk/rm_mfccdir,我们要做的事情如下:<br><br>
+        export featdir=/my/disk/rm_mfccdir<br>
+        # make sure featdir exists and is somewhere you can write.<br>
+        # can be local if you want.<br>
+        mkdir $featdir<br>
+        for x in test_mar87 test_oct87 test_feb89 test_oct89 test_feb91 test_sep92 train; do \<br>
+        　steps/make_mfcc.sh --nj 8 --cmd "run.pl" data/$x exp/make_mfcc/$x $featdir; \<br>
+        　steps/compute_cmvn_stats.sh data/$x exp/make_mfcc/$x $featdir; \<br>
+        done<br><br>
+        运行这个.在一个有几个cpu的机器上应该在两分钟左右完成.你可以改变-nj的数量根据你机器cpu的数量.exp/make_mfcc/train/make_mfcc.1.log文件可以看到创建MFCC特征的过程,在文件的上方可以看到一些命令行.(kaldi的命令总是输出命令行,可以通过设置--print-args=false)<br>
+        在steps/make_mfcc.sh脚本中,可以看到一行调用split_scp.pl.你可能猜到了为什么这么做.<br>
+        通过键入:<br><br>
+        wc $featdir/raw_mfcc_train.1.scp <br>
+        wc data/train/wav.scp<br><br>
+        (你可以确认!废话好多!^^)<br>
+        接下来,你会看到一行调用compute-mfcc-feats.这个选项调用一个配置文件,该文件为一种机制,在kaldi中使用这种机制可以略过一些配置项,类似HTK的配置文件,但它实际上是很少使用.<br>
+        在我们解释这些之前,先来看一些代码,这些代码用来测试输入和输出使用:<br><br>
+        head data/train/wav.scp<br>
+        head $featdir/raw_mfcc_train.1.scp<br>
+        less $featdir/raw_mfcc_train.1.ark<br><br>
+        注意:.ark文件包含二进制数据.<br>
+        通过文件列表你可以看到这些.ark文件非常大(因为这些文件包含的是真实数据).通过键入下列命令,你可以方便的查看下列ark文件内容(假设当前在s5路径下,运行下列命令):<br><br>
+        copy-feats ark:$featdir/raw_mfcc_train.1.ark ark,t:- | head<br>
+        <br>
+        你可以从这个命令上删除',t'然后在试一次该命令,你可能将它管道给less命令,因为该数据为二进制数据.另一个方法浏览同样的数据:<br><br>
+        copy-feats scp:$featdir/raw_mfcc_train.1.scp ark,t:- | head<br><br>
+        这是因为这些文档文件和脚本描述的是相同的数据.<font color="red">注意:这些命令中的"scp:"和"ark:"前缀.</font>Kaldi不会试图去弄清楚什么是脚本文件或文档文件,事实上,kaldi也不会从文件后缀名识别出该文件.<br>
+        现在键入如下命令:<br><br>
+        head -10 $featdir/raw_mfcc_train.1.scp | tail -1 | copy-feats scp:- ark,t:- | head<br><br>
+        从第10个训练文件中打印出一些数据.<font color="red">注意:scp:- 其中的-表示从标准输入设备输入,scp表示的是脚本文件</font><br><br>
+        接下来,我们将解释脚本文件和文档文件的实际作用.首先我们用相同的方式查看这段代码,从用户的角度键入如下代码:<br><br>
+        tail -30 ../../../src/featbin/copy-feats.cc<br><br>
+        你可以看到这段代码实际工作的部分只有三行代码.如果你熟悉OpenFST的StateIterator,你将发现我们的迭代方式和它是相同的.<br>
+        脚本和文档文件是基本的表.一个表是一个有序集合(例如:特征文件),通过唯一的字符串进行索引(例如:utterance ids).一个表不是一个C++对象,因为我们要分离c++对象对数据的访问依赖,无论是读,迭代还是一些随机的访问.在这些问题中,一个对象类型是一个浮点型矩阵.(它在说什么TT)<br><br>
+        BaseFloatMatrixWriter<br>
+        RandomAccessBaseFloatMatrixReader<br>
+        SequentialBaseFloatMatrixReader<br><br>
+        这些类型的定义实际上是模板.我们不打算进一步考虑细节.一个脚本文件(.scp)或者文档文件(.ark)认为是一个数据表.它们的格式如下:<br>
+        <ul>
+            <li>.scp文件为一个文本格式,一行包含一个key对应一个外部文件"extended filename",指示kaldi去哪里找数据</li>
+            <li>.ark文件可能是文本格式或者是二进制格式(默认为二进制格式,你可以添加",t"修改为文本格式)该格式的形式:key(例如utterance id)接着一个空格,数据对象</li>            
+        </ul>
+        关于脚本文件(.scp)和文档文件(.ark)需要注意的几个点:<br>
+        <ul>
+            <li>rspecifier:表示如何去读取一个表(.ark文件或者.scp文件),例如:"ark:gunzip -c my/dir/foo.ark.gz|"</li>
+            <li>wspecifier:表示如何去写一个表(.ark文件或者.scp文件),例如:"ark,t:foo.ark"</li>
+            <li>.ark文件可以连接在一起,它仍然是一个有效的.ark文件</li>
+            <li>代码可以顺序或者随机访问脚本文件和文档文件(.ark)</li>
+            <li>kaldi在文档文件(.ark)中不会试图去理解对象类型,因此你必须了解对象类型</li>
+            <li>文档文件(.ark)和脚本文件(.scp)不能混合使用</li>
+            <li>通过随机访问文档文件(.ark)可能导致效率低下,所以在你的代码中可能需要提前缓存这些对象</li>
+            <li>如果想有效的随机访问文档文件(.ark),你可以写入一个相关的脚本文件中,使用"ark,scp"机制,(例如:将mfcc特征写入磁盘以备使用).你就可以随机的访问这些scp文件.</li>
+            <li>另一个方法去避免在代码中缓存这些文件,并且可以有效的随机访问文档文件(.ark),在代码中指明文档文件(.ark)是排序后的,以后读取这个有序文件即可.(例如:"ark,s,cs:-",s表示排序,cs表示访问有序文件).</li>
+            <li>读写文档文件(.ark)模板是一个持有类型,这个模板知道如何去读写该文件.</li>
+        </ul>
+        <br>
+        我们在这里只做了一个快速的回顾,因此有可能产生更多的问题,我们会提供这些问题的答案,目的是让你了解涉及问题的种类.更多的细节请看<a href="io.html" title=" Kaldi I/O mechanisms">Kaldi 输入/输出机制.</a>
+        下面的命令,可以让你理解如何让文档文件(.ark)和脚本文件(.scp)应用在管道中:<br><br>
+        head -1 $featdir/raw_mfcc_train.1.scp | copy-feats scp:- ark:- | copy-feats ark:- ark,t:- | head<br><br>
+        运行这个命令并且观察会发生什么.copy-feats,请记住,利用管道将copy-feats传送下去,应为你可能输出很多内容.(在这个例子中,文档文件(ark文件)可能是二进制文件).<br>
+        最后,为了方便,我们应该在同一个路径下合并所有的测试数据.我们将在这些步骤上取一个平均.下面的命令会为说话人合并数据并且重新激活状态.在s5路径下运行下列命令:<br><br>
+        utils/combine_data.sh data/test data/test_{mar87,oct87,feb89,oct89,feb91,sep92}<br>
+        steps/compute_cmvn_stats.sh data/test exp/make_mfcc/test $featdir<br>
+        <br>
+        让我们创建一个训练数据的子集(train.1k),它仅包含每个说话人的1000句话.我们将使用它训练.执行下列命令即可:<br><br>
+        utils/subset_data_dir.sh data/train 1000 data/train.1k <br><br>
+        <h1 title="Monophone training">单音素训练</h1>
+        下一步是训练一个单音素模型.如果你安装的kaldi不是很大,你可能想建立一个exp/软链接去指向一个大一点的磁盘(如果你运行所有的实验并且不去清空,它可能涨到几个G).键入下列命令:<br><br>
+        nohup steps/train_mono.sh --nj 4 --cmd "$train_cmd" data/train.1k data/lang exp/mono &<br><br>
+        通过键入下列命令,你可以查看最近的输出内容:<br><br>
+        tail nohup.out<br><br>
+        你可以运行一个很长的任务,在完成之前,我们可能会断开链接.(我认为这句话的意思是让train_mono.sh在后台运行.)尽管最好的方式是让它运行在你的内存中并且屏幕上实时打印一些信息.事实上,在屏幕上输出的信息和错误描述是很少的,大部分的信息在exp/mono/的日志文件中.<br>
+        当它运行时,看到一个文件--data/lang/topo.这个文件会立刻被创建.每个音素都有一个不同的topo文件.data/phones.txt文件为了画图,其中每个音素对应一个整数id.<font color="red">注意:在拓扑文件中,每个条目都有一个最终状态,并且该状态不会转移到其他装它.</font>在拓扑文件中,常规上第一个状态为初始状态(概率为1),最后一个状态为最终态(概率为1).<br>
+        键入如下命令:<br><br>
+        gmm-copy --binary=false exp/mono/0.mdl - | less<br><br>
+        看到model文件.在你看到模型参数之前,你将看到topo文件的顶部包含的信息.常规上.mdl文件包含两个对象:1.TransitionModel对象,包含HMM拓扑变量信息;2.与模型相关的对象(在本例中,为AmGMM类型)."包含两个对象",意味着该对象有标准的读写格式,我们可以调用这个功能去写一个对象到这个文件中.例如这个对象,不是表的一部分(例如,不是"ark:"或者"scp:"),写入到二进制或者文本模式,可以通过命令行来选型来控制:--binary=true 或者 --binary=false(不同的程序有不同的默认值).对于表(例如文档文件(.ark)或者脚本文件(.scp)),二进制或者文本模型可以通过指定",t"选项来控制.<br>
+        通过这个模型文件可以看到它包含的信息种类.对于这一点我们不要研究更多的细节,比如说kaldi如何表示模型,更多的内容请看<a href="hmm.html">HMM topology and transition modeling</a>.<br>
+        我们将提到一个重要的内容,尽管:p.d.f.'s通过整数id's标识,从0开始(我们称它为pdf-ids).它们没有"names",比如HTK.这个.mdl文件没有足够的信息去映射上下文依赖音素和pdf-ids.对于这些信息,请看tree文件,输入如下命令:<br><br>
+        copy-tree --binary=false exp/mono/tree - | less<br><br>
+        <br>
+        <font color="red">注意:这是一个<font title="monophone">单音素</font>的"tree",因此它非常的琐碎.</font>虽然这个树的格式不是人类可读的,我们收到了很多关于这个树的格式问题,因此我们将要解释这个tree.<font color="green">接下来这段文字对于只是想了解下kaldi的读者可以跳过!^^</font>ToPdf之后,tree文件包含一个多态的EventMap对象到一个p.d.f id,可以认为它存储了映射关系,该关系由整数对(key,value)集合表示phone-in-context和HMM状态.从EventMap派生出ConstantEventMap类型(表示树的叶子),TableEventMap(<font title="representing some kind of lookup table">表示一些表的查找种类</font>)和SplitEventMap(表示树的分裂).在exp/mono/tree,"CE"是标记对于ConstantEventMap(和树的叶子相关),"TE"标记TableEventMap(这里没有"SE",或者SplitEventMap,因为这个是单音素例子)."TE 0 49"表示一个TableEventMap的开始,它在key为0上"<font title="splits">分裂</font>"(表示:对于单音素,第0个音素在长度为1的音素上下文向量中的位置).它后面(我认为指的是0),在括号里,<font title=" by 49 objects of type EventMap">第49个EventMap对象</font>.第一个为NULL,表示0指向一个EventMap,因为phone-id 0保留给"epsilon".例如:non-NULL对象的字符串"TE -1 3(CE 33 CE 34 CE 35)",表示一个TableEventMap在key为-1上分裂.key为在拓扑文件中的PdfClass标识符,在我们的例子中等同于HMM状态索引.该音素有3个HMM状态,因此分配给这个key的值为0,1或2.在括号里面的是三个ConstantEventMap对象,每一个表示一个树的叶子.<br>
+        现在,看看exp/mono/ali.1.gz文件(<font title="it should exist if the training has progressed far enough">如果训练足够的话,它应该存在</font>):<br><br>
+         copy-int-vector "ark:gunzip -c exp/mono/ali.1.gz|" ark,t:- | head -n 2<br><br>
+        这个是训练数据的Viterbi对齐;每个训练文件有一行记录.现在再一次关注exp/mono/tree并且找到最高的p.d.f id(在文件的最后).对比exp/mono/ali.1.gz中的数字.看出什么不对来嘛?对齐中的数字变大了!原因是对齐文件不包含p.d.f id's.它包含更细粒度的标识符--我们称它为"transition-id".<font title=" This also encodes the phone and the transition within the prototype topology of the phone.">这些是在音素原型拓扑文件中编码音素和转换状态.</font>这在很多方面是有用的.如果你想解释一个"transition-id"是什么,(例如:you are looking at an alignment in cur.ali and you see one repeated a lot and you wonder why)你可以使用"show-transitions"程序显示一些关于transition-ids的信息,键入如下命令:<br><br>
+        show-transitions data/lang/phones.txt exp/mono/0.mdl<br><br>
+        如果这里你有一个文件--occupation counts(占用数量,文件名为*.occs),你可以给出第2个参数,它会给你显示出更多的信息.<br>
+        给你显示一个很友好的对齐格式,试试下面的命令:<br><br>
+        show-alignments data/lang/phones.txt exp/mono/0.mdl "ark:gunzip -c exp/mono/ali.1.gz |" | less<br><br>
+        关于HMM拓扑, transition-ids, transition modeling等信息,请看<a href="hmm.html"> HMM topology and transition modeling.</a>
+        下面,让我们看看如何训练的(假设你的shell是bash),键入:<br><br>
+        grep Overall exp/mono/log/acc.{?,??}.{?,??}.log<br><br>
+        你可以看到在每一次迭代中的声学似然.接下来,你会看到exp/mono/log/updata.*.log的文件,在更新的日志中看看信息种类是什么.<br>
+        当单音素训练完成后,我们测试单音素解码.在解码之前,我们需要创建一个解码图.键入如下命令:<br><br>
+        utils/mkgraph.sh --mono data/lang exp/mono exp/mono/graph<br><br>
+        看到utils/mkgraph.sh 将被调用.它们大多数的名字是以"fst"开始的(例如:fsttablecompose),实际上,大多数这些程序不是分布在OpenFST.我们创建一些属于我们自己的FST操作.你可以找出这些程序的位置.任意拿出一个被utils/mkgraph.sh调用的fst程序(例如:fstdeterminizestar).然后键入:<br><br>
+        which fstdeterminizestar<br><br>
+        大多数我们有不同的程序版本,因为我们在语音识别系统中使用一些FSTs的不同方法(less AT&T-ish).例如,"fstdeterminizestar"相应的"classical"确定化操作来移除epsilon弧.更多信息请看<a href="graph.html"> Decoding graph construction in Kaldi .</a>在图创建之后,我们可以开始单音素解码:<br><br>
+        steps/decode.sh --config conf/decode.config --nj 20 --cmd "$decode_cmd" \<br>
+        &nbsp;&nbsp;exp/mono/graph data/test exp/mono/decode<br><br>
+        看到一些解码输出信息:<br><br>
+        less exp/mono/decode/log/decode.2.log<br><br>
+        你可以看到屏幕上的一些信息.记录的文本形式只出现在日志中:这些程序的真实输出存放在exp/mono/decode/scoring/2.tra文件中.这些tra的数字文件(2.tra)表示用来语言模型(LM scale)的解码过程.这里我们用LM scale等同于默认的2~13(2.tra~13.tra)(更多细节请看 <a href="local-score.html">local/score.sh</a>local/score.sh ).看一下,从一个tra文件的真实解码词序列(这里使用2.tra),键入:<br>
+        utils/int2sym.pl -f 2- data/lang/words.txt exp/mono/decode/scoring/2.tra<br>
+        这里使用一个相关的脚本为sym2int.pl.你可以将它转换回整数形式,键入下列命令:<br><br>
+        utils/int2sym.pl -f 2- data/lang/words.txt exp/mono/decode/scoring/2.tra | \<br>
+        &nbsp;&nbsp;utils/sym2int.pl -f 2- data/lang/words.txt <br><br>
+        -f 2- 选项表示不将utterance id转换为整数.接下来,键入:<br>
+        tail exp/mono/decode/log/decode.2.log <br>
+        在结束时,它将打印一些总结信息,包括实时因素和每帧的对数似然.实时因素典型的大约为0.2-0.3(i.e. faster than real time).这取决于你的CPU,有多少的jobs在你的机器上和一起其他因素.这个脚本并行化运行了(该脚本指的是上面decode.sh,其中有个选项为--nj 20,表示jobs数量)20个jobs,因此你的机器如果小于20核这个解码将会很慢.<font color="red">注意:对于一个精确的结果,我们使用一个相对广的beam(20)<font color="green">(这个beam指的是什么我还不知道TT)</font>在典型的LVCSR步骤,这个beam将会很小(大约在13左右)</font><br>
+        我们在看一次日志文件,关注于一个命令行.在可选参数的位置之前(这里是mandatory),键入:<br><br>
+        gmm-decode-faster<br><br>
+        看到一些使用信息,找到你在日志看到的参数信息.回忆起"rspecifier"标识符,这个标识符表示如何读取一个表(table),"wspecifier"标识如何写一个表.(看看这些并试图找出它们TT醉了...)看到rspecifier对应的特点并且试着去理解它.<br>
+        目前为止,一个单音素系统已经完成,接下来的教程我们将实现三音素系统的训练和解码^^.<br>
+        <a href="tutorial.html">up:kaldi tutorial</a><br>
+        <a href="tutorial_looking.html">previous:Overview of the distribution</a><br>
+        <a href="tutorial_code.html">Next: Reading and modifying the code </a><br>
+    </body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+
+        <a href="tutorial.html">Up: Kaldi tutorial <a/><br>
+        <a href="tutorial_prereqs.html">Previous: Prerequisites </a><br>
+        <a href="tutorial_git.html">Next: Version control with Git</a> <br>
+            
+            <p>
+                第一步是下载安装kaldi.我们将使用版本1工具箱,所以这个教程不能获取外部数据.然而,主干的脚本代码是容易安装的并且通常是可用的.如果你使用的"trunk"代码,你可以试着使用当前的脚本,在egs/rm/s5路径下,而不是"r3"在本教程中提到的脚本.但是,你这样做教程的某些方面可能已过期。
+            </p>
+            <p>
+                假设Git已经安装,获取最新的代码键入如下命令:<br>
+                <p>
+                    git clone https://github.com/kaldi-asr/kaldi.git kaldi-trunk --origin golden
+                </p>
+            接下来使用cd命令进入到kaldi-trunk.看到INSTALL文件和下列的使用说明(它指向你的两个子路径(tools和src)).仔细看看安装脚本的输出,指导你如何去做.一些安装的错误不是致命的,并且安装脚本会告诉你(例如,有些事情它安装的很好,但并不是真正需要的).最佳的情况是(你需要做的):<br>
+                <p>
+                    cd kaldi-trunk/tools/; make; cd ../src; ./configure; make
+                <p/>
+            每件事都要做.如果这些没有执行,可能是有别的计划(比如说,在你的系统上安装一些支持包,或者是tools/下运行install_atlas.sh,或是在tools/INSTALL运行一些别的步骤,或是提供选项在src/下配置一些脚本).如果遇到这些问题,你可能需要一些信息在<a href="build_setup.html"> The build process (how Kaldi is compiled) </a>,可能会帮到你.另外,随时保持联系并且我们会很高兴去帮助你.<a href="other.html">(Other Kaldi-related resources (and how to get help))</a>
+            </p>
+            
+            
+        <a href="tutorial.html">Up: Kaldi tutorial <a/><br>
+        <a href="tutorial_prereqs.html">Previous: Prerequisites </a><br>
+        <a href="tutorial_git.html">Next: Version control with Git</a> <br>
+    </body>
+</html>

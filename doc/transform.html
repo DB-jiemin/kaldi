@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+       <!-- 在这里添加内容 --> 
+       <h1>kaldi--特征和模型空间转换</h1>
+       <hr>
+	   <h1>前言</h1>
+       kaldi现在支持特征和模型空间转换与映射.特征空间转换和映射通过工具来实现(它们本质上是一些矩阵),下面的部分涉及一些通用的工具:<br>
+       <ul> 
+	       <li><a href="">全局线性或仿射特征变换</a></li>
+	       <li><a href="">说话者相关vs说话人vs句子自适应</a></li>
+	       <li><a href="">语音-说话人 和 说话人-语音映射</a></li>
+	       <li><a href="">组合转换</a></li>
+	       <li><a href="">估计转换时的静音检测</a></li>
+       </ul> 
+       <br>
+	   转换,投影和其他特征操作通常是不包含说话人特性:<br>
+       <ul> 
+	       <li><a href="">线性判别分析(LDA)转换</a></li>
+	       <li><a href="">帧拼接和Delta特征计算</a></li>
+	       <li><a href="">异方差线性判别分析</a></li>
+	       <li><a href="">全局半并列协防差(STC)/最大似然线性转换(MLLT)估计</a></li>
+       </ul> 
+       <br>
+	   全局转换--典型的应用在说话人自适应方法:<br>
+       <ul> 
+	       <li><a href="">全局CMLLR/fMLLR转换</a></li>
+	       <li><a href="">线性VTLN(LVTLN)</a></li>
+	       <li><a href="">指数转换(ET)</a></li>
+	       <li><a href="">倒谱系数均值方差归一化</a></li>
+       </ul> 
+       <br>
+	   我们接下来讨论回归分类树和转换:<br>
+       <ul> 
+	       <li><a href="">为自适应建立回归树</a></li>
+       </ul> 
+       <br>
+       <h1>应用全局线性或仿射特征转换</h1>
+	   在全局特征空间转换和映射中,是类不相关的(例如:speech/silence 或 regression classes),我们表示它们为一个矩阵.线性转换和映射是表示一个矩阵左乘一个特征向量,因此我们得到的转换特征为Ax.仿射转换和映射一样的表示方法,现在我们想象有一个1追加到特征向量的尾部,因此转换特征为W[x/1](x在上,1在下),这里的W=[A;b],A和b是线性转换和偏差项.注意这里与常规的教程不同.这里的1可能出现在特征第一维度.全局转换和映射通常写入一个Matrix&lt;BaseFloat&gt;类型的实数文件,说话人或语音特征的转换映射是存放在一个类似矩阵的表中,通过speaker-id或者utterancd-id索引.<br>
+	   使用transform-feats应用转换:<br>
+	   <div>
+	       transform-feats &lt;transform&gt; &lt;input-feats&gt; &lt;output-feats&gt; 
+	   </div>
+       &lt;transform&gt;可能是一个文件或者是一个指示符号,&lt;input-feats&gt;是一个输入指示符,&lt;output-feats&gt;是一个输出指示符,(具体细节请看<a>Specifying Table formats:wspecifiers and rspecifiers</a>and<a>Extended filenames:rxfilenames and wxfilenames</a>).程序的输出为转换后的线性特征或是仿射特征,线性特征维数等于特征维数,仿射特征维数是特征维数加1.这个程序的典型的使用方式是管道符号的一部分.典型的例子:<br>
+	   <div>
+	       feats="ark:splice-feats scp:data/train.scp ark:- |<br>
+		   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;transform-feats $dir/0.mat ark:- ark:- |"<br>
+		   some-program some-args "$feats" some-other-args ...
+	   </div>
+	   0.mat包含了一个实数矩阵.应用在说话人标识转换的例子:<br>
+       feats="ark:add-deltas scp:data/train.scp ark:- |<br>
+	   &nbsp;&nbsp;&nbsp;transform-feats --utt2spk=ark:data/train.utt2spk ark:$dir/0.trans ark:- ark:- |"<br>
+		   some-program some-args "$feats" some-other-args ...
+	   per-utterance例子和上面的一样,但是需要删除--utt2spk选项.在上面的例子中,文档文件0.trans包含转换(例如:CMLLR转换),它通过speaker-id索引,data/train.utt2spk有很多行,格式为:"utt-id spk-id"(更多细节请看下一部分).transform-feats不关心如何去估计转换矩阵,它只是将转换矩阵应用到特征上.然后它将打印出所有特征的平均每帧的log determinant(对数行列式).这样可以有效的比较对象函数(log determinant将添加到per-frame likelihood,可以使用程序打印它们:gmm-align, gmm-acc-stats,gmm-decode-kaldi).如果线性转换部分A(暂时忽略offset项)不是方的,程序将改为打印每帧的1/2*logdet(AA^T)均值.它表示这是一个伪log determinant.这个是有用的,在检查MLLT估计收敛性,这个转换矩阵是MLLT矩阵乘上LDA矩阵.
+	   <h1>说话者相关 vs 说话人 vs 句子 自适应</h1>
+	   估计转换通常上是做一个特殊种类的自适应,例如:说话人相关 vs (speaker- 或 utterance-specific).例如,LDA和MLLT/STC转换是说话者相关,但是fMLLR转换是说话者无关或utterance-specific.估计speaker- 或 utterance-specific转换将工作在默认的模式-- per-utterance模式,支持per-speaker模式中指定--spk2utt选项.<br>
+    </body>
+</html>

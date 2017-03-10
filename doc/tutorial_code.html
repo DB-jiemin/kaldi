@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+        <a href="tutorial.html">Up: Kaldi tutorial </a><br>
+        <a href="tutorial_running.html">Previous: Running the example scripts </a><br>
+        
+        构建三音素系统,首先我们看下代码的某些部分.最主要的事情是你将学习这些代码是如何组织的并且它们的相互依赖结构和一些经验,这些知识帮助你调试和修改这些代码.如果你想更深入的理解这些代码,我们建议你浏览下面这个链接,那里有更多的细节文档.<a href="index.html">main documentation page</a><br>
+        <h1>通用工具</h1>
+        回到顶层的路径(我们这里是kaldi-1)并且进入src/下.首先看一下base/kaldi-common.h文件.#include从base目录中包含了不同的kaldi程序.你大致可以从这些文件的名字猜出来它们的作用:err-logging宏定义,typedefs,数学工具(随机数)和一些#define.这些只是一些最基本的工具集合,在util/common-utils.h包含了一个较为完整的集合,包含命令行解析和I/O功能,这些通过管道的方式链接一个外部文件.花费几秒钟的时间去看一眼util/common-utils.h并且看看它都#include了些什么.为什么我们要在base/路径中分离出一些工具子集,因为我们可以最小化matrix/路径的依赖关系,这个matrix/路径仅仅依赖于base/路径.看看matrix/MakeFile并且在该文件中搜索base/看看它是如何解释的.看看MakeFile文件的规则可以给你一些工具箱结构的启示.<br>
+        <h1>矩阵库(修改和调试代码)</h1>
+        现在我们看下matrix/matrix-lib.h文件.看看它都包含了些什么文件.它提供了矩阵库的整体概览.这个库是基于c++封装的BLAS和LAPACK.sp-matrix.h是对称矩阵包,tp-matrix.h是三角矩阵包.快速的浏览一下matrix/kaldi-matrix.h文件.这个文件将向你展示矩阵代码是什么样子的.它有c++类来表示一个矩阵.我们为<a href="matrix.html">矩阵库</a>提供了一个精简版本的说明.你可能会注意到代码中的奇怪注释风格,它们开始于三个///.这是我们推荐的风格,因为这个有Doxygen软件自动生成的文档,如果是块注释请用开始<br>
+        <p>/**</p>
+        It also generates the page you are reading right now(文档的资源在src/doc/下).<br>
+        在这一点上我们希望你能修改它,并且编译它.我们将添加一个测试功能到matrix/matrix-lib-test.cc中.在之前设计的测试程序,如果发生一些错误会以一个非0的状态中止或者退出程序.<br>
+        我们将添加一个测试功能到Vector::AddVec中.这些功能添加一些常数乘以一个向量得到另一个向量.你可以通过阅读下面代码,并尽可能的理解它们.<font color="red">(特别提醒:我们特意在这段代码中插入了两行错误)</font>.如果你不熟悉这个模板,理解它可能有一些困难.我们也尽可能的避免使用模板,因此在不熟悉模板程序前提下,kaldi的大部分程序还是可以看明白的.
+        <p>&nbsp;
+                template&lt;class Real&gt;<br>
+                void UnitTestAddVec() {<br>
+                &nbsp;&nbsp;// note: Real will be float or double when instantiated.<br>
+                &nbsp;&nbsp;int32 dim = 1 + Rand() % 10;<br>
+                &nbsp;&nbsp;Vector<Real> v(dim); w(dim); // two vectors the same size.<br>
+                &nbsp;&nbsp;InitRand(&v);<br>
+                &nbsp;&nbsp;InitRand(&w);<br>
+                &nbsp;&nbsp;Vector<Real> w2(w); // w2 is a copy of w.<br>
+                &nbsp;&nbsp;Real f = RandGauss();<br>
+                &nbsp;&nbsp;w.AddVec(f, v); // w <-- w + f v<br>
+                &nbsp;&nbsp;for (int32 i = 0; i < dim; i++) {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;Real a = w(i), b = f * w2(i) + v(i);<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;AssertEqual(a, b); // will crash if not equal to within<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;// a tolerance.<br>
+                &nbsp;&nbsp;}<br>
+                }<br>
+        </p>
+        在matrix-lib-test.cc中添加上述代码.在MatrixUnitTest()添加一行:<br>
+            <p>UnitTestAddVec<Real>();</p>
+        无论你在该函数中哪里添加该行代码.然后键入"make test".它应该给出一个错误(一个分号,它应该是一个逗号),修改它然后在试一次.现在键入:"./matrix-lib-test".这个程序应该崩溃,因为断言失败了.为什么失败?因为另一个单元测试代码的缺失,接下来我们将调试它,键入:<br>
+                <p>gdb ./matrix-lib-test</p>
+        (如果你在cygwin上,你应该按照提示键入:break __assert_func).输入:r.当它崩溃时,它调用了abort(),并且被调试器捕捉到.键入:bt看栈的踪迹.在栈中,通过键入:up向上,直到你进入test函数.当你到达正确的地方时,你应该看到如下输出:<br>
+            <p>#5  0x080943cf in kaldi::UnitTestAddVec<float> () at matrix-lib-test.cc:2568
+            2568	    AssertEqual(a, b); // will crash if not equal to within</p>
+        如果你向上太远,你可以键入down.键入"p a" 和 "p b"你可以看到a,b的值(p是print的简写).你在屏幕上应该看到类似如下信息:<br>
+                <p>(gdb) p a<br>
+                    $5 = -0.931363404<br>
+                    (gdb) p b<br>
+                    $6 = -0.270584524<br>
+                    (gdb)<br></p>
+            确切的值可能和你的不一样.这些值可能有相当大的不同,很明显这是一个可以容忍的错误.通常你可以使用print表达式查看任何的变量,但是圆括号操作不能工作(例如"v(i)"),你可以键入下列命令查看向量中的值:<br>
+            <p>
+                    (gdb) p v.data_[0]<br>
+                    $8 = 0.281656802<br>
+                    (gdb) p w.data_[0]<br>
+                    $9 = -0.931363404<br>
+                    (gdb) p w2.data_[0]<br>
+                    $10 = -1.07592916<br>
+                    (gdb)<br>
+            </p>
+            这个可以帮助你的工作,表达式b是错误的.在代码中修改它,重新编译,在运行一次(在gdb提示中键入r可以返回).它现在可以正常运行.可以预见错误之前强制gdb在某一代码出跳出这个点,你可以检查这些表达式的值,看看它们工作是否ok.你想跳出到调试器中,你应设置一个断点.在工作区以外的行号上插入断点,当错误发生时即可进入调试器,gdb做了类似下列的事情:<br>
+            <p>
+            (gdb) b matrix-lib-test.cc:2568<br>
+            Breakpoint 1 at 0x80943b4: file matrix-lib-test.cc, line 2568. (4 locations)<br>
+            </p>
+            
+            当程序进入到这里,你可以键入:r,使用p命令查看这些表达式的值.继续,则键入c.它将一直停在那里，因为它是在一个循环.键入:d 1可以删除第一个间断点(假设它是第一个间断点),键入c继续.这个程序应该运行结束.键入q退出调试器.如果你需要调式一个程序,可以采用下列的命令行,键入:<br>
+            <p>
+             gdb --args kaldi-program arg1 arg2 ...<br>
+            (gdb) r<br>
+            ...<br>
+            </p>
+            或者你可以调用没有参数的gdb,然后按照提示键入:r 参数1 参数2 ...<br>
+            当你完成并且编译它,键入:<br>
+            <p>git diff</p>
+            看到你作出的改变.未来,如果你共享你的代码到kaldi并且计划要发送给我们,(你可以提交它们到一个分支),因此稍后你可以生成一个纯净Github 拉取请求.我们推荐你熟悉你自己的Git分支,如果你不想共享你的代码,Git是一个有力的工具帮助你维护你本地代码的变化以及那些你可能作出的贡献.
+            <h1>声学模型代码</h1>
+            接下来看看gmm/diag-gmm.h文件(这个文件存储一个高斯混合模型).DiagGmm类可能看起来有一点难以理解,因为它有一些不同访问方式的函数.搜索"private"并且看下这个类的成员变量(它们总是结束以一个下划线结束,这个是kaldi的风格).应该清楚我们是如何存储GMM的.这只是单一的GMM,不是整体的GMMs.<a href="am-diag-gmm_8h.html">gmm/am-diag-gmm.h</a>这个类存储了整个GMMs.<font color="red">注意:它不继承任何东西.</font>.搜索"private"你可以看到这些成员变量(它只有两个).从这些你可可看出这个类是非常简单的(由各种方法和常规功能).很自然的回到:转换到哪,决策树在哪,HMM拓扑在哪?这些东西可以从声学模型中分离开,因为可能是研究人员要替换其中的一部分部分,并且保持其他部分是相同的.我们以后在来看这些东西.<br>
+            <h1>特征提取代码</h1>
+            接下来看一下<a href="feature-mfcc_8h.html">feat/feature-mfcc.h</a>.关注MfccOptions结构体.在mfcc特征提取上,这些结构体成员给你提供了一些想法.<font color="red">注意:有些结构体他们本身是可选的.</font>看一下Register功能.这是kaldi标准的选项类别.然后看看<a href="compute-mfcc-feats_8cc.html">featbin/compute-mfcc-feats.cc</a>(这是一个命令行程序)搜索Register.你可以看到Register的一些可选结构体被调用.执行 featbin/compute-mfcc-feats (不需要给参数)可以看到支持MFCC特征提取的可选项的完整列表.在MfccOptions类中你可以看到一些被注册的可选项,而另一些则在<a href="feature-mfcc_8h.html">feat/feature-mfcc.h</a>.通过--option=value的方法指定,键入:<br>
+            <p>
+            featbin/compute-mfcc-feats ark:/dev/null ark:/dev/null
+            </p>
+            
+            这个应该可以运行成功.它把/dev/null看作一个空的文档.你可以在这个例子中设置一些可选项,实验一些,例如:<br>
+            <p>featbin/compute-mfcc-feats --raw-energy=false ark:/dev/null ark:/dev/null</p>
+            你唯一能知道的就是这个程序不会崩溃,会顺利执行;试着去删掉 "=" 符号 或者缩短参数的名字 或者 改变参数的数量,会看到他的错误信息,并且打印它的使用信息.<br>
+            <h1 title="Acoustic decision-tree and HMM topology code">声学决策树和HMM拓扑代码</h1>
+            接下来看看<a href="build-tree_8h.html">tree/build-tree.h</a>.找到BuildTree功能.这是一个主要的功能--建立决策树.<font color="red">注意:它返回一个EventMap类型的指针.</font>这种类型的功能是将一个(key,value)对集合存储为一个整数.它的定义在<a href="event-map_8h.html">tree/event-map.h.</a>keys和values是一对整数,其中keys表示音素上下文位置(例如:0,1,2),values表示音素.有一个特殊的key是-1,大致表示在HMM的位置.进入实验路径(../egs/rm/s5),我们看看树是如何被建立的.BuildTree主要输入类型是BuileTreeStatsType,它的定义如下:<br>
+            <p>typedef vector&lt;pair&lt;EventType, Clusterable*&gt; &gt; BuildTreeStatsType;</p>
+            EventType类型定义如下:<br>
+            <p>typedef vector&lt;pair&lt;EventKeyType, EventValueType&gt; &gt; EventType;</p>
+            EventType表示(key,value)键值对集合,例如:{ {-1, 1}, {0, 15}, {1, 21}, {2, 38} }表示音素 21左上下文音素是15,右上下文音素是38,pdf-class是1(在通常的例子中意味着他的状态数是1,是三音素的中间状态).Clusterable* 指针指向一个虚类,拥有一些泛化接口,这些接口支持一些操作,比如说:添加一些统计信息,对一些对象的估值(例如:似然).在常规情况下,它真实的描述一个类,这个类包含有效的统计信息,为了估计高斯p.d.f对角线上的值.<br>
+            输入:<br>
+            <p>less exp/tri1/log/acc_tree.log</p>
+            在这个文件中没有大量的信息,但是你可以看到一些命令行.这个程序存放了每个三音素上下文的HMM状态的单高斯统计量(事实上,pdf-class).--ci-phones选项:它知道去避免收集一些分裂统计信息,对于一些特殊的音素,例如静音音素silence,我们不想知道它的上下文依赖信息(这是一种优化).这些程序的输出可以认为是BuildTreeStatsType类型,即使是为了去读它,我们必须知道它具体是什么类型.输入:<br>
+            <p>less exp/tri1/log/train_tree.log</p>
+            这个文件存放了生成决策树的信息,它读取一些统计信息,可以输出这些统计信息去了解一些决策树信息.它是基于BuildTree封装的.在决策树聚类是自动生成的,你可以在steps/train_tri1.sh脚本中看到.(查找cluster-phones和compile-questions)<br>
+            接下来看一下<a href="hmm-topology_8h.html">hmm/hmm-topology.h</a>.这个文件为大量的音素定义了HMM拓扑集合.通常每个音素可以有不同的拓扑.拓扑包含了"default"转换(常用于初始化).看一下示例拓扑文件的头部.这里有一个标记&lt;PdfClass&gt;<font color="red">(注意:是HTK文本格式,看起来像是XML文件,但是它不是真正的XML)</font>这里,&lt;PdfClass&gt;和HMM-state(&lt;State&gt;)是相同的;一般来说没必要.这是尝试在不同HMM状态中间去增强分布的一种机制,如果你想创建一个5个音素以上的转换模型,它可能是有用的.
+        <a href="tutorial.html">Up: Kaldi tutorial </a><br>
+        <a href="tutorial_running.html">Previous: Running the example scripts </a><br>        
+    </body>
+</html>

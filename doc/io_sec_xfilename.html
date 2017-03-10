@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>GETTING STARTED WITH BRACKETS</title>
+        <meta name="description" content="An interactive getting started guide for Brackets.">
+        <link rel="stylesheet" href="../main.css">
+    </head>
+    <body>
+        <h2>Kaldi for Dummies tutorial</h2>
+        <hr>
+        <h1>引言</h1>
+        本章一步一步的交初学者如何使用kaldi工具箱建立一个ASR系统.当我在初学的时候多么希望读到这样一篇文章.这些都是基于我在语音识别项目和脚本程序上的经验.你将学会如何安装kaldi,如何让它工作,如何运行一个ASR系统在你自己的数据集上.作为回报,你将得到你第一个语音解码器.<br>
+        首先,你应该知道什么是kaldi并且为什么要用kaldi而不是别的.通常,应该知道一些关于语音识别和ASR系统的一些知识.以及一些脚本语音的知识.在未来可能会用到c++.<br>
+        (可能你需要修改一些源代码)<br>
+        To READ:<br>
+        <a href="about.html">About the Kaldi Project</a><br>
+        <a href="tutorial_prereqs.html">Kaldi tutorial:Prerequisites</a><br>
+        <h1>环境</h1>
+        1.Linux!尽管它可以在windows上运行,工作在linux系统上出现问题会相对少一些.我选择的是Ubuntu 14.10.我推荐用这个版本的linux系统.当你最终运行你的linux系统时,请打开终端安装一些必要的软件.
+        (必须安装的)<br>
+        <ul>
+            <li>atlas-线性代数优化</li>
+            <li>autoconf-自动软件编译(在不同的系统上)</li>
+            <li>automake-创建方便的编译脚本</li>
+            <li>git-分布式脚本控制系统</li>
+            <li>libtool-创建静态和动态的库</li>
+            <li>svn-版本控制系统,kaldi下载和安装需要</li>
+            <li>wget-下载数据,使用HTTP,HTTPS,FTP协议</li>
+            <li>zlib-数据压缩</li>
+        </ul>
+        (可能需要安装的)<br>
+        <ul>
+            <li>awk-编程语言,用在文件与数据流的搜索和处理模式</li>
+            <li>bash-Unix shell和脚本程序语言</li>
+            <li>grep-命令行工具,搜索指定表达式的文本数据集</li>
+            <li>make-从源代码中自动建立可执行的程序和库</li>
+            <li>perl-动态程序语言,处理文本文件</li>
+        </ul>
+        完成.操作系统和需要的linux工具准备就绪.<br>
+        <h1>下载Kaldi</h1>
+        按照说明:<a href="install.html">下载安装kaldi</a>.如果你没有太多了解使用GIT,请阅读:<a href="tutorial_git.html">kaldi教程:Git版本控制</a><br>
+        我的kaldi安装在路径(Kaldi root path):/home/{user}/kaldi-trunk<br>
+        <h1>kaldi的目录结构</h1>
+        尝试确认特定的kaldi组件被放置的地方。你可以阅读你找到的README文件.<br>
+        kaldi-trunk包含的主要Kaldi路径:<br>
+        <ul>
+            <li>egs-例子,包含了30个流行的语音,可以帮助你快速的建立ASR系统</li>
+            <li>misc-额外的工具,不是kaldi功能所需</li>
+            <li>src-kaldi源代码</li>
+            <li>tools-有用的组件和外部工具</li>
+            <li>windows-使用windows运行kaldi的工具</li>
+        </ul>
+        <h1>你的示范工程</h1>
+        这个教程的目的,假如你有一些简单的数据集(<a href="kaldi_for_dummies_audio.html">语音数据</a>).试着'转换'每个action,直接应用到自己的项目上.如果你完全没有语音数据或者你想跟教程一样的方法,随时记录你的步骤,它将发挥更大的经验--ASR.Here we go.<br>
+        <h2>你的先决条件</h2>
+        你应该有一些语音数据,该语音包含一些口语说的数字,需要不同的人说出来的.每个语音是一个完整的口语句子.(例如:one,nine,five.)<br>
+        <h2>目的</h2>
+        你应该切分这些数据,分为训练集合和测试集合,在ASR系统中训练它,测试它,并且给出解码结果.
+        <h2>第一个目标</h2>
+        首先,创建路径kaldi-trunk/egs/路径,这里包含你工程相关的工具.
+        <h1>数据准备</h1>
+        <h3>语音数据</h3>
+        假设你想基于你的语音数据建立一个ASR系统.例如有100个文件集合.文件格式为wav.每个是用英语说的三个数字.每个wav文件的命名方式是一个可以识别的方式(例如:1_5_6.wav,表示该语音文件内容为:one,five,six)放置在一个可以识别文件夹中,表示特定的人说出的特定的记录.综上所述:我的实例数据集如下:<br>
+        <ul>
+            <li>10个不同的说话人,ASR系统必须训练和测试不同的说话人,越多越好</li>
+            <li>每个说话人说10句话</li>
+            <li>100句子/发音,100个wav文件放在特定的说话人文件夹下,每个文件夹中包含10个wav文件</li>
+            <li>300个词(数字从0-9)</li>
+            <li>每个发音句子包含3个词</li>
+        </ul>
+        按照我的实例,调整你的数据集.<br>
+        <h3>任务</h3>
+        进入到kaldi-trunk/egs/digits,创建digits_audio文件夹.在kaldi-trunk/egs/digits/digits_audio创建两个文件夹:train和test.你选择一个说话人表示测试数据集.使用说话人的id--"speakerID"在每一个kaldi-trunk/egs/digits/digits_audio/test命名一个新的文件夹.放置所有语音文件相关的人.放置9个说话人到train文件夹中--这些是你的训练数据并且为每一个人创建说话人的子文件夹.<br>
+        <h3>声学数据</h3>
+        现在你需要创建一些文本文件,这些文件让kaldi如何访问你的语音数据.这些文件是必须的.你需要创建本部分的每个文件(在<a href="kaldi_for_dummies.html">语言数据</a>也是同样)看成一个包含许多字符串的文本文件(每个字符串是一行).<font color="red">这些字符串需要排序.</font>如果你遇到任何关于排序的问题,可以使用kaldi的utils/validate_data_dir.sh脚本进行检查,使用utils/fix_data_dir.sh整理数据,保证有序.关于utils路径信息,你可以看<a href="kaldi_for_dummies.html">Tools attachment.</a>
+        <h4 title="声学数据部分的任务">任务</h4>
+        在kaldi-trunk/egs/digits路径下创建一个文件夹,包含test和train两个子文件夹.在每个子文件夹下创建下列文件:(在test和train子文件夹下是相同的命名方式,但是它们是不同两个数据集):<br>
+        <ul>
+            <li>spk2gender<br>
+            这个文件是关于说话人性别的.我们假设,每个说话人speakerID是唯一的(这个例子中:recordingID对应每一位发言者只有一个录音的音频数据文件夹).在我们的例子中有5位男士和5位女士.(f=female,m=male).<br>
+            形式:&lt;speakerID&gt;&nbsp;&lt;gender&gt;<br>
+            <p>
+                cristine f<br>
+                dad m<br>
+                josh m<br>
+                july f<br>
+                # and so on...<br>
+            </p>
+            </li>
+
+            <li>wav.scp<br>
+            这个文件包含每个语音文件,一个语音文件对应一个口语.如果你遵守我的命名规则方式,utteranceID将不会多于speakerID(说话人的文件夹名)接上wav文件名,以.wav结束.<br>翻译的不好,看例子很直观...<br>
+            形式:&lt;utteranceID&gt;&nbsp;&lt;full_path_to_audio_file&gt;<br>
+            <p>
+               dad_4_4_2 /home/{user}/kaldi-trunk/egs/digits/digits_audio/train/dad/4_4_2.wav<br>
+                july_1_2_5 /home/{user}/kaldi-trunk/egs/digits/digits_audio/train/july/1_2_5.wav<br>
+                july_6_8_3 /home/{user}/kaldi-trunk/egs/digits/digits_audio/train/july/6_8_3.wav<br>
+                # and so on... <br>
+            </p>
+            </li>
+            
+            <li>text<br>
+            这个文件包含每个语音文件对应的文本内容.<br>
+            形式:&lt;utteranceID&gt;&nbsp;&lt;text_transcription&gt;<br>
+            <p>
+            dad_4_4_2 four four two<br>
+            july_1_2_5 one two five<br>
+            july_6_8_3 six eight three<br>
+            # and so on...   <br>
+            </p>
+            </li>
+            
+            <li>utt2spk<br>
+            这个文件告诉ASR系统每个语音文件对应指定的说话人.<br>
+            形式:&lt;utteranceID&gt;&nbsp;&lt;speakerID&gt;<br>
+            <p>
+                dad_4_4_2 dad<br>
+                july_1_2_5 july<br>
+                july_6_8_3 july<br>
+                # and so on...<br>
+            </p>
+            </li>
+            
+            <li>corpus.txt<br>
+            这个文件在一个稍微不同的路径下.在kaldi-trunk/egs/digits/data创建另一个文件夹local.在kaldi-trunk/egs/digits/data/local创建corpus.txt文件,它包含每个语音文件的内容,这个内容将在你的ASR系统中使用.(在我们的例子中,将有100行对应100个语音文件).
+            形式:&lt;text_transcription&gt;<br>
+            <p>
+                one two five<br>
+                six eight three<br>
+                four four two<br>
+                # and so on...<br>
+            </p>
+            </li>
+            <h3>语言数据</h3>
+            这个部分与语言模型文件相关,这个部分也是必须的.关于细节请看:<a href="data_prep.html">数据准备</a>(精确的描述).可以随时阅读其他的脚本.现在是最好的时机.<br>
+            <h4>任务</h4>
+            在kaldi-trunk/egs/digits/data/local路径中创建dict文件夹.在dict中创建下列文件:<br>
+            <li>lexcion.txt<br>
+            这个文件包含了每个word对应的音素,将词转换成音素.(可以从/egs/voxforge获得).<br>
+            形式:&lt;word&gt;&nbsp;&lt;phone1&gt;&nbsp;&lt;phone2&gt;...<br>
+            <p>
+             !SIL sil<br>
+            &lt;UNK&gt; spn<br>
+            eight ey t<br>
+            five f ay v<br>
+            four f ao r<br>
+            nine n ay n<br>
+            one hh w ah n<br>
+            one w ah n<br>
+            seven s eh v ah n<br>
+            six s ih k s<br>
+            three th r iy<br>
+            two t uw<br>
+            zero z ih r ow<br>
+            zero z iy r ow   <br>
+            </p>
+            </li>
+            
+            <li>nonsilence_phones.txt<br>
+            这个文件列出你项目中非静音音素.<br>
+            形式:&lt;音素&gt;<br>
+            <p>
+                ah<br>
+                ao<br>
+                ay<br>
+                eh<br>
+                ey<br>
+                f<br>
+                hh<br>
+                ih<br>
+                iy<br>
+                k<br>
+                n<br>
+                ow<br>
+                r<br>
+                s<br>
+                t<br>
+                th<br>
+                uw<br>
+                w<br>
+                v<br>
+                z<br>
+            </p>
+            </li>
+            
+            <li>silence_phones.txt<br>
+            这个文件包含静音音素.<br>
+            形式:&lt;音素&gt;<br>
+            <p>
+            sil<br>
+            spn   <br> 
+            </p>
+            </li>
+            
+            <li>optional_silence.txt<br>
+            该文件列出可选静音音素.<br>
+            形式:&lt;音素&gt;<br>
+            <p>sil</p>
+            </li>
+        </ul>
+        <h2>项目定稿</h2>
+        创建运行脚本之前.你的项目结构将要完成.<br>
+        <h3>依赖工具</h3>
+        你需要添加一些kaldi工具,它们在一些范例中有应用.<br>
+        <h4>任务</h4>
+        从ksldi-trunk/egs/wsj/s5复制两个文件夹(整体复制)--utils和steps,把它们放到你的kaldi-trunk/egs/digits路径下,你也可以创建两个链接到两个路径.你可能发现了一些链接,例如,kaldi-trunk/egs/voxforge/s5.<br>
+        <h3>评分脚本</h3>
+        这个脚本帮助你获得解码结果.
+        <h4>任务</h4>
+        从kaldi-trunk/egs/voxforge/local复制score.sh脚本到你项目中的local文件夹中.(kaldi-trunk/egs/digits/local)<br>
+        <h3>SRILM 安装</h3>
+        在我们的例子中需要安装语言模型工具--SRI Language Modeling Toolkit(SRILM).<br>
+        <h4>任务</h4>
+        对于安装细节请看--kaldi-trunk/tools/install_srilm.sh.<br>
+        <h3>配置文件</h3>
+        这里没有必要创建配置文件,但是对于以后,这是一个好的习惯.<br>
+        <h4>任务</h4>
+        在kaldi-trunk/egs/digits创建文件夹conf.在conf中创建两个文件(在解码和mfcc特征提取过程中的配置--在/egs/voxforge获得):<br>
+        <ul>
+        <li>decode.config<br>
+        <P>
+            first_beam=10.0<br>
+            beam=13.0<br>
+            lattice_beam=6.0<br>
+        </P>
+        </li>
+        
+        <li>mfcc.conf<br>
+            <p>--user-energy=false</p>
+        </li>
+        </ul>
+        <h2>创建运行脚本</h2>
+        使用kaldi开发你的第一个ASR系统.最后的工作是准备运行脚本去创建你选择的ASR系统.为了便于理解,我在脚本里添加了一些注释.<br>
+        这些脚本是基于/egs/voxforge的.我决定使用两个不同的训练方法:<br>
+        <ul>
+            <li>MONO-单音素训练</li>
+            <li>TRI1-简单的三音素训练</li>
+        </ul>
+        这两个脚本充分说明了解码结果的区别,在数字lexcion和小一些的训练数据集.<br>
+        <h3>任务</h3>
+        在kaldi-trunk/egs/digits路径下创建三个脚本:<br>
+        <ul>
+            <li>cmd.sh<br>
+                <p>
+                    1 # Setting local system jobs (local CPU - no external clusters)<br>
+                    2 export train_cmd=run.pl<br>
+                    3 export decode_cmd=run.pl<br>
+                </p>
+            </li>
+            
+            <li>path.sh<br>
+                <p>
+                1 # Defining Kaldi root directory<br>
+                2 export KALDI_ROOT=`pwd`/../..<br>
+                3 <br>
+                4 # Setting paths to useful tools<br>
+                5 export<br> PATH=$PWD/utils/:$KALDI_ROOT/src/bin:$KALDI_ROOT/tools/openfst/bin:$KALDI_ROOT/src/fstbin/:$KALDI_ROOT/src/gmmbin/:$KALDI_ROOT/src/featbin/:$KALDI_ROOT/src/lm/:$KALDI_ROOT/src/sgmmbin/:$KALDI_ROOT/src/sgmm2bin/:$KALDI_ROOT/src/fgmmbin/:$KALDI_ROOT/src/latbin/:$PWD:$PATH<br>
+                6 <br>
+                7 # Defining audio data directory (modify it for your installation directory!)<br>
+                8 export DATA_ROOT="/home/{user}/kaldi-trunk/egs/digits/digits_audio"<br>
+                9 <br>
+               10 # Variable that stores path to MITLM library<br>
+               11 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/tools/mitlm-svn/lib<br>
+               12 <br>
+               13 # Variable needed for proper data sorting<br>
+               14 export LC_ALL=C<br>
+                </p>
+            </li>
+            
+            <li>run.sh<br>
+                <p>
+    1 #!/bin/bash
+<br>    2
+<br>    3 . ./path.sh || exit 1
+<br>    4 . ./cmd.sh || exit 1
+<br>    5
+<br>    6 nj=1       # number of parallel jobs - 1 is perfect for such a small data set
+<br>    7 lm_order=1 # language model order (n-gram quantity) - 1 is enough for digits grammar
+<br>    8
+<br>    9 # Safety mechanism (possible running this script with modified arguments)
+<br>   10 . utils/parse_options.sh || exit 1
+<br>   11 [[ $# -ge 1 ]] && { echo "Wrong arguments!"; exit 1; }
+<br>   12
+<br>   13 # Removing previously created data (from last run.sh execution)
+<br>   14 rm -rf exp mfcc data/train/spk2utt data/train/cmvn.scp data/train/feats.scp data/train/split1 data/test/spk2utt data/test/cmvn.scp data/test/feats.scp data/test/split1 data/local/lang data/lang data/local/tmp data/local/dict/lexiconp.txt
+<br>   15
+<br>   16 echo
+<br>   17 echo "===== PREPARING ACOUSTIC DATA ====="
+<br>   18 echo
+<br>   19
+<br>   20 # Needs to be prepared by hand (or using self written scripts):
+<br>   21 #
+<br>   22 # spk2gender  [&lt;speaker-id&gt; &lt;gender&gt;]
+<br>   23 # wav.scp     [&lt;uterranceID&gt; &lt;full_path_to_audio_file&gt;]
+<br>   24 # text           [&lt;uterranceID&gt; &lt;text_transcription&gt;]
+<br>   25 # utt2spk     [&lt;uterranceID&gt; &lt;speakerID&gt;]
+<br>   26 # corpus.txt  [&lt;text_transcription&gt;]
+<br>   27
+<br>   28 # Making spk2utt files
+<br>   29 utils/utt2spk_to_spk2utt.pl data/train/utt2spk &gt; data/train/spk2utt
+<br>   30 utils/utt2spk_to_spk2utt.pl data/test/utt2spk &gt; data/test/spk2utt
+<br>   31
+<br>   32 echo
+<br>   33 echo "===== FEATURES EXTRACTION ====="
+<br>   34 echo
+<br>   35
+<br>   36 # Making feats.scp files
+<br>   37 mfccdir=mfcc
+<br>   38 # Uncomment and modify arguments in scripts below if you have any problems with data sorting
+<br>   39 # utils/validate_data_dir.sh data/train     # script for checking prepared data - here: for data/train directory
+<br>   40 # utils/fix_data_dir.sh data/train          # tool for data proper sorting if needed - here: for data/train directory
+<br>   41 steps/make_mfcc.sh --nj $nj --cmd "$train_cmd" data/train exp/make_mfcc/train $mfccdir
+<br>   42 steps/make_mfcc.sh --nj $nj --cmd "$train_cmd" data/test exp/make_mfcc/test $mfccdir
+<br>   43
+<br>   44 # Making cmvn.scp files
+<br>   45 steps/compute_cmvn_stats.sh data/train exp/make_mfcc/train $mfccdir
+<br>   46 steps/compute_cmvn_stats.sh data/test exp/make_mfcc/test $mfccdir
+<br>   47
+<br>   48 echo
+<br>   49 echo "===== PREPARING LANGUAGE DATA ====="
+<br>   50 echo
+<br>   51
+<br>   52 # Needs to be prepared by hand (or using self written scripts):
+<br>   53 #
+<br>   54 # lexicon.txt           [&lt;word&gt; &lt;phone 1&gt; &lt;phone 2&gt; ...]
+<br>   55 # nonsilence_phones.txt    [&lt;phone&gt;]
+<br>   56 # silence_phones.txt    [&lt;phone&gt;]
+<br>   57 # optional_silence.txt  [&lt;phone&gt;]
+<br>   58
+<br>   59 # Preparing language data
+<br>   60 utils/prepare_lang.sh data/local/dict "&lt;UNK&gt;" data/local/lang data/lang
+<br>   61
+<br>   62 echo
+<br>   63 echo "===== LANGUAGE MODEL CREATION ====="
+<br>   64 echo "===== MAKING lm.arpa ====="
+<br>   65 echo
+<br>   66
+<br>   67 loc=`which ngram-count`;
+<br>   68 if [ -z $loc ]; then
+<br>   69    if uname -a | grep 64 &gt;/dev/null; then
+<br>   70            sdir=$KALDI_ROOT/tools/srilm/bin/i686-m64
+<br>   71    else
+<br>   72                    sdir=$KALDI_ROOT/tools/srilm/bin/i686
+<br>   73    fi
+<br>   74    if [ -f $sdir/ngram-count ]; then
+<br>   75                    echo "Using SRILM language modelling tool from $sdir"
+<br>   76                    export PATH=$PATH:$sdir
+<br>   77    else
+<br>   78                    echo "SRILM toolkit is probably not installed.
+<br>   79                            Instructions: tools/install_srilm.sh"
+<br>   80                    exit 1
+<br>   81    fi
+<br>   82 fi
+<br>   83
+<br>   84 local=data/local
+<br>   85 mkdir $local/tmp
+<br>   86 ngram-count -order $lm_order -write-vocab $local/tmp/vocab-full.txt -wbdiscount -text $local/corpus.txt -lm $local/tmp/lm.arpa
+<br>   87
+<br>   88 echo
+<br>   89 echo "===== MAKING G.fst ====="
+<br>   90 echo
+<br>   91
+<br>   92 lang=data/lang
+<br>   93 cat $local/tmp/lm.arpa | arpa2fst - | fstprint | utils/eps2disambig.pl | utils/s2eps.pl | fstcompile --isymbols=$lang/words.txt --osymbols=$lang/words.txt --keep_isymbols=false --keep_osymbols=false | fstrmepsilon | fstarcsort --sort_type=ilabel &gt; $lang/G.fst
+<br>   94
+<br>   95 echo
+<br>   96 echo "===== MONO TRAINING ====="
+<br>   97 echo
+<br>   98
+<br>   99 steps/train_mono.sh --nj $nj --cmd "$train_cmd" data/train data/lang exp/mono  || exit 1
+<br>  100
+<br>  101 echo
+<br>  102 echo "===== MONO DECODING ====="
+<br>  103 echo
+<br>  104
+<br>  105 utils/mkgraph.sh --mono data/lang exp/mono exp/mono/graph || exit 1
+<br>  106 steps/decode.sh --config conf/decode.config --nj $nj --cmd "$decode_cmd" exp/mono/graph data/test exp/mono/decode
+<br>  107
+<br>  108 echo
+<br>  109 echo "===== MONO ALIGNMENT ====="
+<br>  110 echo
+<br>  111
+<br>  112 steps/align_si.sh --nj $nj --cmd "$train_cmd" data/train data/lang exp/mono exp/mono_ali || exit 1
+<br>  113
+<br>  114 echo
+<br>  115 echo "===== TRI1 (first triphone pass) TRAINING ====="
+<br>  116 echo
+<br>  117
+<br>  118 steps/train_deltas.sh --cmd "$train_cmd" 2000 11000 data/train data/lang exp/mono_ali exp/tri1 || exit 1
+<br>  119
+<br>  120 echo
+<br>  121 echo "===== TRI1 (first triphone pass) DECODING ====="
+<br>  122 echo
+<br>  123
+<br>  124 utils/mkgraph.sh data/lang exp/tri1 exp/tri1/graph || exit 1
+<br>  125 steps/decode.sh --config conf/decode.config --nj $nj --cmd "$decode_cmd" exp/tri1/graph data/test exp/tri1/decode
+<br>  126
+<br>  127 echo
+<br>  128 echo "===== run.sh script is finished ====="
+<br>  129 echo<br>
+                </p>
+            </li>
+        </ul>
+        <h1>获取结果</h1>
+        现在你可以运行你的run.sh脚本.如果你遇到任何的错误,日志会在终端打印出来,处理掉它即可.<br>
+        除此之外,你需要注意终端显示的解码结果.进入新建kaldi-trunk/egs/digits/exp,你可能注意到一些文件夹,mono和tri1,它们路径结构相似.进入到mono/decode路径下.你可能会发现一些结果文件(名字为wer_{数字}).日志文件在解码的过程中会放到这个文件夹下.<br>
+        <h1>总结</h1>
+        这仅仅是一个例子.这个简短的教程说明如何在kaldi中创建项目,并且帮助你理解kaldi工具箱.<br>
+        确保你浏览过<a href="http://kaldi-asr.org/">http://kaldi-asr.org/</a>-官网.这里有两个非常有用的部分:<br>
+        <ul>
+            <li><a href="tutorial.html">kaldi tutorial</a>--一步一步的教你如何创建ASR系统,直到你完成它,你可能没有RM数据集.他很好,去读!</li>
+            <li><a href="data_prep.html">数据准备</a>--非常详细的阐述了如何使用你自己的数据建立一个kaldi程序</li>
+        </ul>
+        下面给出一些更有用的链接:<br>
+        <ul>
+            <li><a href="https://sites.google.com/site/dpovey/kaldi-lectures">https://sites.google.com/site/dpovey/kaldi-lectures</a>kaldi主要作者创建的课程</li>
+            <li><a href="http://www.superlectures.com/icassp2011/category.php?lang=en&id=131">http://www.superlectures.com/icassp2011/category.php?lang=en&id=131</a>--类似的,视频版本</li>
+            <li><a href="http://www.diplomovaprace.cz/133/thesis_oplatek.pdf">http://www.diplomovaprace.cz/133/thesis_oplatek.pdf</a>--关于kaldi语音识别的硕士论文</li>
+        </ul>
+    </body>
+</html>
